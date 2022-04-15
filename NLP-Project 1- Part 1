@@ -1,0 +1,825 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.7.4"
+    },
+    "colab": {
+      "name": "Solution - Project - Statistical NLP - Author Features Prediction.ipynb",
+      "provenance": [],
+      "collapsed_sections": []
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "source": [
+        "! pip install kaggle"
+      ],
+      "metadata": {
+        "id": "2AK7A9Oo5L_b",
+        "outputId": "4eedbbc3-afe5-4150-f06e-8b872468d2e4",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: kaggle in /usr/local/lib/python3.7/dist-packages (1.5.12)\n",
+            "Requirement already satisfied: python-dateutil in /usr/local/lib/python3.7/dist-packages (from kaggle) (2.8.2)\n",
+            "Requirement already satisfied: tqdm in /usr/local/lib/python3.7/dist-packages (from kaggle) (4.64.0)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.7/dist-packages (from kaggle) (2.23.0)\n",
+            "Requirement already satisfied: python-slugify in /usr/local/lib/python3.7/dist-packages (from kaggle) (6.1.1)\n",
+            "Requirement already satisfied: urllib3 in /usr/local/lib/python3.7/dist-packages (from kaggle) (1.24.3)\n",
+            "Requirement already satisfied: certifi in /usr/local/lib/python3.7/dist-packages (from kaggle) (2021.10.8)\n",
+            "Requirement already satisfied: six>=1.10 in /usr/local/lib/python3.7/dist-packages (from kaggle) (1.15.0)\n",
+            "Requirement already satisfied: text-unidecode>=1.3 in /usr/local/lib/python3.7/dist-packages (from python-slugify->kaggle) (1.3)\n",
+            "Requirement already satisfied: chardet<4,>=3.0.2 in /usr/local/lib/python3.7/dist-packages (from requests->kaggle) (3.0.4)\n",
+            "Requirement already satisfied: idna<3,>=2.5 in /usr/local/lib/python3.7/dist-packages (from requests->kaggle) (2.10)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "g3H0K9exCoDz",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "47d4c130-a369-42a6-d8c3-9ed9c05fbfec"
+      },
+      "source": [
+        "from google.colab import drive\n",
+        "drive.mount('/content/drive')"
+      ],
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Mounted at /content/drive\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "! mkdir '/root/.kaggle/'"
+      ],
+      "metadata": {
+        "id": "j-y7VA1DvYD2",
+        "outputId": "cd81aacb-537f-44fe-ecf2-350de556f12c",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "mkdir: cannot create directory ‘/root/.kaggle/’: File exists\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "cp '/content/drive/MyDrive/kaggle.json' '/root/.kaggle/'"
+      ],
+      "metadata": {
+        "id": "AQfN-ZZ669AC"
+      },
+      "execution_count": 6,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "! kaggle datasets download rtatman/blog-authorship-corpus"
+      ],
+      "metadata": {
+        "id": "Mi1qV_gG5jcf",
+        "outputId": "84387713-ea6c-4a29-ff83-5228e9aacbb9",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Downloading blog-authorship-corpus.zip to /content\n",
+            " 94% 273M/290M [00:02<00:00, 85.6MB/s]\n",
+            "100% 290M/290M [00:02<00:00, 112MB/s] \n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "! unzip '/content/blog-authorship-corpus.zip'"
+      ],
+      "metadata": {
+        "id": "DuU1bGkC8FiI",
+        "outputId": "35ee3f37-7f97-4d4e-836b-6e137c81fafe",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Archive:  /content/blog-authorship-corpus.zip\n",
+            "  inflating: blogtext.csv            \n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "UnHeJhCb34yh"
+      },
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "df = pd.read_csv('/content/blogtext.csv')"
+      ],
+      "execution_count": 1,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "65-iG85P34ys",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 143
+        },
+        "outputId": "5fe05ccd-e54c-482d-ef9e-7a86e954171e"
+      },
+      "source": [
+        "df.head(3)"
+      ],
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "        id gender  age    topic sign         date  \\\n",
+              "0  2059027   male   15  Student  Leo  14,May,2004   \n",
+              "1  2059027   male   15  Student  Leo  13,May,2004   \n",
+              "2  2059027   male   15  Student  Leo  12,May,2004   \n",
+              "\n",
+              "                                                text  \n",
+              "0             Info has been found (+/- 100 pages,...  \n",
+              "1             These are the team members:   Drewe...  \n",
+              "2             In het kader van kernfusie op aarde...  "
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-8ecaf413-82fc-4ce3-83a2-99bdb685d4ca\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>id</th>\n",
+              "      <th>gender</th>\n",
+              "      <th>age</th>\n",
+              "      <th>topic</th>\n",
+              "      <th>sign</th>\n",
+              "      <th>date</th>\n",
+              "      <th>text</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>2059027</td>\n",
+              "      <td>male</td>\n",
+              "      <td>15</td>\n",
+              "      <td>Student</td>\n",
+              "      <td>Leo</td>\n",
+              "      <td>14,May,2004</td>\n",
+              "      <td>Info has been found (+/- 100 pages,...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>2059027</td>\n",
+              "      <td>male</td>\n",
+              "      <td>15</td>\n",
+              "      <td>Student</td>\n",
+              "      <td>Leo</td>\n",
+              "      <td>13,May,2004</td>\n",
+              "      <td>These are the team members:   Drewe...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>2059027</td>\n",
+              "      <td>male</td>\n",
+              "      <td>15</td>\n",
+              "      <td>Student</td>\n",
+              "      <td>Leo</td>\n",
+              "      <td>12,May,2004</td>\n",
+              "      <td>In het kader van kernfusie op aarde...</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-8ecaf413-82fc-4ce3-83a2-99bdb685d4ca')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "        \n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "      \n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-8ecaf413-82fc-4ce3-83a2-99bdb685d4ca button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-8ecaf413-82fc-4ce3-83a2-99bdb685d4ca');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n",
+              "  "
+            ]
+          },
+          "metadata": {},
+          "execution_count": 2
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "scrolled": true,
+        "id": "wf-Wt1VI34y5",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "6418e803-902f-4729-b2db-0584382fb9df"
+      },
+      "source": [
+        "df.isnull().sum()"
+      ],
+      "execution_count": 11,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "id        0\n",
+              "gender    0\n",
+              "age       0\n",
+              "topic     0\n",
+              "sign      0\n",
+              "date      0\n",
+              "text      0\n",
+              "dtype: int64"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 11
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "WK99q02X34zE"
+      },
+      "source": [
+        "import re\n",
+        "df.text = df.text.apply(lambda x: x.lower())\n",
+        "df.text = df.text.apply(lambda x: x.strip())\n",
+        "df.text = df.text.apply(lambda x: re.sub('[^A-Za-z]+', ' ', x))"
+      ],
+      "execution_count": 7,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import nltk\n",
+        "nltk.download('stopwords')\n",
+        "from nltk.corpus import stopwords\n",
+        "stopwords = set(stopwords.words('english'))\n",
+        "df.text = df.text.apply(lambda x: ' '.join([word for word in x.split() if word not in stopwords]))"
+      ],
+      "metadata": {
+        "id": "A45cZ3aq8_dt",
+        "outputId": "f755ada6-ec85-41dd-ddc9-1ce5aaf7e172",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Package stopwords is already up-to-date!\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "1eU2kfOL34zS"
+      },
+      "source": [
+        "df = df[['text','age']]"
+      ],
+      "execution_count": 10,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df.describe()"
+      ],
+      "metadata": {
+        "id": "fZU43v1J8NVe",
+        "outputId": "fcdc29a7-4967-43e8-a037-c2ae2dba1a62",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 300
+        }
+      },
+      "execution_count": 12,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "               age\n",
+              "count  1283.000000\n",
+              "mean     21.798909\n",
+              "std       4.845356\n",
+              "min      13.000000\n",
+              "25%      17.000000\n",
+              "50%      23.000000\n",
+              "75%      26.000000\n",
+              "max      34.000000"
+            ],
+            "text/html": [
+              "\n",
+              "  <div id=\"df-b3a8ee8f-fbc3-4025-855a-926c85d6058e\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>age</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>count</th>\n",
+              "      <td>1283.000000</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>mean</th>\n",
+              "      <td>21.798909</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>std</th>\n",
+              "      <td>4.845356</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>min</th>\n",
+              "      <td>13.000000</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>25%</th>\n",
+              "      <td>17.000000</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>50%</th>\n",
+              "      <td>23.000000</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>75%</th>\n",
+              "      <td>26.000000</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>max</th>\n",
+              "      <td>34.000000</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-b3a8ee8f-fbc3-4025-855a-926c85d6058e')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "        \n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "      \n",
+              "  <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-b3a8ee8f-fbc3-4025-855a-926c85d6058e button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-b3a8ee8f-fbc3-4025-855a-926c85d6058e');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n",
+              "  "
+            ]
+          },
+          "metadata": {},
+          "execution_count": 12
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df.age = df.age.apply(lambda x: int(str(x)[0]))"
+      ],
+      "metadata": {
+        "id": "5-ttR6QU8ysX"
+      },
+      "execution_count": 13,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['age']"
+      ],
+      "metadata": {
+        "id": "qkSlbDDX_LXd",
+        "outputId": "ad6bdcbd-0954-478f-9922-fc12806c1c20",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 22,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0         1\n",
+              "1         1\n",
+              "2         1\n",
+              "3         1\n",
+              "4         3\n",
+              "         ..\n",
+              "681279    2\n",
+              "681280    2\n",
+              "681281    2\n",
+              "681282    2\n",
+              "681283    2\n",
+              "Name: age, Length: 681284, dtype: int64"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 22
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "XwhJKUZx34za"
+      },
+      "source": [
+        "from sklearn.model_selection import train_test_split\n",
+        "\n",
+        "x_train, x_test, y_train, y_test = train_test_split(df.text.values, df.age.values, test_size=0.40, random_state=12)"
+      ],
+      "execution_count": 14,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.feature_extraction.text import TfidfVectorizer\n",
+        "vectorizer = TfidfVectorizer()"
+      ],
+      "metadata": {
+        "id": "k5M-be-k5xjr"
+      },
+      "execution_count": 15,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "x_train_bow = vectorizer.fit_transform(x_train).toarray()"
+      ],
+      "metadata": {
+        "id": "2lK9XIca_O-d"
+      },
+      "execution_count": 16,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "x_test_bow = vectorizer.transform(x_test).toarray()"
+      ],
+      "metadata": {
+        "id": "ELuvRftWFFiw"
+      },
+      "execution_count": 17,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.naive_bayes import GaussianNB\n",
+        "model = GaussianNB()"
+      ],
+      "metadata": {
+        "id": "Dj0f73D53z0p"
+      },
+      "execution_count": 18,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "BjqY1DlA340C",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "9cf7d985-afda-4edb-90c1-115a54c4598c"
+      },
+      "source": [
+        "model.fit(x_train_bow, y_train)"
+      ],
+      "execution_count": 19,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "GaussianNB()"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 19
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eBcgoW8O340H"
+      },
+      "source": [
+        "predicted_labels = model.predict(x_test_bow)"
+      ],
+      "execution_count": 26,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "VwWuEQdq340U"
+      },
+      "source": [
+        "## Calculate accuracy\n",
+        "- Accuracy\n",
+        "- F1-score\n",
+        "- Precision\n",
+        "- Recall"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "uN3ODxXt340U"
+      },
+      "source": [
+        "from sklearn.metrics import accuracy_score\n",
+        "from sklearn.metrics import f1_score\n",
+        "from sklearn.metrics import precision_score\n",
+        "from sklearn.metrics import recall_score\n",
+        "\n",
+        "def print_evaluation_scores(y_val, predicted):\n",
+        "    print('Accuracy score: ', accuracy_score(y_val, predicted))\n",
+        "    print('F1 score: ', f1_score(y_val, predicted, average = 'micro'))\n",
+        "    print('Average precision score: ', precision_score(y_val, predicted, average = 'micro'))\n",
+        "    print('Average recall score: ', recall_score(y_val, predicted, average = 'micro'))"
+      ],
+      "execution_count": 46,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "scrolled": true,
+        "id": "eIXQFl45340X",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "b4fdb367-8535-475a-97a1-46816f6df0e7"
+      },
+      "source": [
+        "print_evaluation_scores(y_test, predicted_labels)"
+      ],
+      "execution_count": 47,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Accuracy score:  0.811284046692607\n",
+            "F1 score:  0.811284046692607\n",
+            "Average precision score:  0.811284046692607\n",
+            "Average recall score:  0.811284046692607\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
